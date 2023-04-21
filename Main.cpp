@@ -13,20 +13,24 @@ GLfloat WIDTH = 1200,
         incY = 0.25;
 
 GLint leftRacketX = 40,
-      leftRacketXf = 55,
+      leftRacketXf = leftRacketX + 15,
       leftRacketY = (HEIGHT / 2) - 40,
-      leftRacketYf = (HEIGHT / 2) + 40,
+      leftRacketYf = leftRacketY + 40,
 
       rightRacketX = WIDTH - 40,
-      rightRacketXf = WIDTH - 55,
+      rightRacketXf = rightRacketX - 15,
       rightRacketY = (HEIGHT / 2) - 40,
-      rightRacketYf = (HEIGHT / 2) + 40;
+      rightRacketYf = rightRacketY + 40,
+
+      racketsSpeed = 20;
 
 // Defining colors
 GLfloat red[] = {1.0f, 0.0f, 0.0f};
 GLfloat green[] = {0.0f, 1.0f, 0.0f};
 GLfloat blue[] = {0.0f, 0.0f, 1.0f};
 GLfloat white[] = {1.0f, 1.0f, 1.0f};
+
+using namespace std;
 
 void initGlut(int *argc, char **argv)
 {
@@ -139,7 +143,8 @@ void drawBall(float cx, float cy, float r, int num_segments)
 {
     glBegin(GL_TRIANGLE_FAN);
     glColor3f(1.0f, 1.0f, 1.0f); // Define a cor do círculo como branco
-    for (int i = 0; i < num_segments; i++) {
+    for (int i = 0; i < num_segments; i++)
+    {
         float theta = 2.0f * 3.1415926f * float(i) / float(num_segments);
         float x = r * cosf(theta);
         float y = r * sinf(theta);
@@ -212,22 +217,65 @@ void draw(GLvoid)
     glutPostRedisplay();
 }
 
-void eventoTeclado(GLubyte key, GLint x, GLint y)
+void eventoTeclado(char unsigned key, GLint x, GLint y)
 {
+    switch (key)
+    {
+    case 'w':
+    case 'W':
+        if (leftRacketY == 20)
+        {
+            return;
+        }
+        leftRacketY -= racketsSpeed;
+        leftRacketYf -= racketsSpeed;
+        break;
+    case 's':
+    case 'S':
+        if (leftRacketYf == 580)
+        {
+            return;
+        }
+        leftRacketY += racketsSpeed;
+        leftRacketYf += racketsSpeed;
+        break;
+    default:
+        break;
+    }
     glutPostRedisplay();
 }
 
 void eventoSetas(GLint key, GLint x, GLint y)
 {
+    if (key == GLUT_KEY_UP)
+    {
+        if (rightRacketY == 20)
+        {
+            return;
+        }
+        rightRacketY -= racketsSpeed;
+        rightRacketYf -= racketsSpeed;
+    }
+
+    if (key == GLUT_KEY_DOWN)
+    {
+        if (rightRacketYf == 580)
+        {
+            return;
+        }
+        rightRacketY += racketsSpeed;
+        rightRacketYf += racketsSpeed;
+    }
+
     glutPostRedisplay();
 }
 
 int main(int argc, char *argv[])
 {
-    std::cout << "\nALUNOS:\t\t\t\t\tMATRÍCULA:\n\nArthur Ramón Souza Ferreira Martins\t20210027186\n"
-              << "\nDavi Baratto\t\t\t\t20210025940\n"
-              << "\nJoão Roberto de Oliveira Ferreira\t20\n"
-              << std::endl;
+    cout << "\nALUNOS:\t\t\t\t\tMATRÍCULA:\n\nArthur Ramón Souza Ferreira Martins\t20210027186\n"
+         << "\nDavi Baratto\t\t\t\t20210025940\n"
+         << "\nJoão Roberto de Oliveira Ferreira\t20200083646\n"
+         << endl;
 
     initGlut(&argc, argv);
     // Defining double buffering and RGBA exhibition mode
