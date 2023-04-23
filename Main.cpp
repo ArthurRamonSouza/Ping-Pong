@@ -2,26 +2,29 @@
 #include <iostream>
 #include <math.h>
 
-GLfloat WIDTH = 1200,
-        HEIGHT = 600,
-        BORDER_SIZE = 10,
-        xi = 0,
-        xf = BORDER_SIZE,
-        yi = 0,
-        yf = 40,
-        incX = 0.0,
-        incY = 0.25;
+GLint WIDTH = 1200,
+      HEIGHT = 600,
+      BORDER_SIZE = 10,
+      xi = 0,
+      xf = BORDER_SIZE,
+      yi = 0,
+      yf = 40,
+      incX = 0.0,
+      incY = 10;
+
+// Ball consts
+GLint num_segments = 128;
 
 // Rackets consts
 GLint leftRacketX = 40,
       leftRacketXf = leftRacketX + 15,
-      leftRacketY = (HEIGHT / 2) - 40,
-      leftRacketYf = leftRacketY + 40,
+      leftRacketY = (HEIGHT / 2) - 60,
+      leftRacketYf = leftRacketY + 60,
 
       rightRacketX = WIDTH - 40,
       rightRacketXf = rightRacketX - 15,
-      rightRacketY = (HEIGHT / 2) - 40,
-      rightRacketYf = rightRacketY + 40,
+      rightRacketY = (HEIGHT / 2) - 60,
+      rightRacketYf = rightRacketY + 60,
 
       racketsSpeed = 20;
 
@@ -36,7 +39,14 @@ using namespace std;
 void initGlut(int *argc, char **argv)
 {
     glutInit(argc, argv);
-    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    /*
+        GLUT_DOUBLE
+            Bit mask to select a double buffered window. This overrides GLUT_SINGLE if it is also specified.
+
+        GLUT_DEPTH
+            Bit mask to select a window with a depth buffer.
+    */
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(WIDTH, HEIGHT);
     glutInitWindowPosition(50, 50);
     glutCreateWindow("Pong With C++ and OpenGL");
@@ -125,6 +135,7 @@ void drawRackets(GLvoid)
 {
     // Dranwig the left racket
     glBegin(GL_POLYGON);
+    glColor3fv(white);
     glVertex2i(leftRacketX, leftRacketY);
     glVertex2i(leftRacketXf, leftRacketY);
     glVertex2i(leftRacketXf, leftRacketYf);
@@ -133,6 +144,7 @@ void drawRackets(GLvoid)
 
     // Dranwig the right racket
     glBegin(GL_POLYGON);
+    glColor3fv(white);
     glVertex2i(rightRacketX, rightRacketY);
     glVertex2i(rightRacketXf, rightRacketY);
     glVertex2i(rightRacketXf, rightRacketYf);
@@ -174,7 +186,7 @@ void borderEffect(GLvoid)
         yf = HEIGHT - BORDER_SIZE;
         yi = HEIGHT;
         xf = xi + 40;
-        incX += (0.25);
+        incX += 10;
         incY *= 0;
     }
 
@@ -184,7 +196,7 @@ void borderEffect(GLvoid)
         xf = WIDTH - BORDER_SIZE;
         yi = yf - 40;
         incX *= 0;
-        incY += -(0.25);
+        incY += -10;
     }
 
     else if (xi >= WIDTH && yi <= 0)
@@ -192,7 +204,7 @@ void borderEffect(GLvoid)
         yi = 0;
         yf = BORDER_SIZE;
         xi = xf - 40;
-        incX += -(0.25);
+        incX += -10;
         incY *= 0;
     }
 
@@ -202,8 +214,14 @@ void borderEffect(GLvoid)
         xf = BORDER_SIZE;
         yf = yi + 40;
         incX *= 0;
-        incY += 0.25;
+        incY += 10;
     }
+}
+
+void displayScore(GLvoid)
+{
+    // glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
+    // glutSwapBuffers();
 }
 
 void draw(GLvoid)
@@ -212,9 +230,10 @@ void draw(GLvoid)
     drawingBorders();
     drawingCenterLine();
     drawRackets();
-    drawBall((WIDTH / 2), (HEIGHT / 2), 16.f, 64);
+    drawBall((WIDTH / 2), (HEIGHT / 2), 16.f, num_segments);
     borderEffect();
     glFlush();
+    glutSwapBuffers();
     glutPostRedisplay();
 }
 
@@ -230,7 +249,6 @@ void keyboard(char unsigned key, GLint x, GLint y)
         }
         leftRacketY -= racketsSpeed;
         leftRacketYf -= racketsSpeed;
-        cout << leftRacketY << endl;
         break;
     case 's':
     case 'S':
@@ -244,6 +262,8 @@ void keyboard(char unsigned key, GLint x, GLint y)
     default:
         break;
     }
+
+    glutSwapBuffers();
     glutPostRedisplay();
 }
 
@@ -257,7 +277,6 @@ void arrowKeys(GLint key, GLint x, GLint y)
         }
         rightRacketY -= racketsSpeed;
         rightRacketYf -= racketsSpeed;
-        cout << rightRacketY << endl;
     }
 
     if (key == GLUT_KEY_DOWN)
@@ -270,6 +289,7 @@ void arrowKeys(GLint key, GLint x, GLint y)
         rightRacketYf += racketsSpeed;
     }
 
+    glutSwapBuffers();
     glutPostRedisplay();
 }
 
@@ -281,8 +301,6 @@ int main(int argc, char *argv[])
          << endl;
 
     initGlut(&argc, argv);
-    // Defining double buffering and RGBA exhibition mode
-    // glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
     createWindow();
     glClear(GL_COLOR_BUFFER_BIT);
     glutDisplayFunc(draw);
@@ -291,3 +309,9 @@ int main(int argc, char *argv[])
     glutMainLoop();
     return 0;
 }
+
+/*  Helpfull content
+
+https://stackoverflow.com/questions/35514902/glutinitdisplaymodeglut-double-glut-rgb-glut-depth-explanation
+
+*/
