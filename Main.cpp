@@ -12,6 +12,7 @@ GLfloat WIDTH = 1200,
         incX = 0.0,
         incY = 0.25;
 
+// Rackets consts
 GLint leftRacketX = 40,
       leftRacketXf = leftRacketX + 15,
       leftRacketY = (HEIGHT / 2) - 40,
@@ -217,7 +218,7 @@ void draw(GLvoid)
     glutPostRedisplay();
 }
 
-void eventoTeclado(char unsigned key, GLint x, GLint y)
+void keyboard(char unsigned key, GLint x, GLint y)
 {
     switch (key)
     {
@@ -229,6 +230,7 @@ void eventoTeclado(char unsigned key, GLint x, GLint y)
         }
         leftRacketY -= racketsSpeed;
         leftRacketYf -= racketsSpeed;
+        cout << leftRacketY << endl;
         break;
     case 's':
     case 'S':
@@ -245,7 +247,7 @@ void eventoTeclado(char unsigned key, GLint x, GLint y)
     glutPostRedisplay();
 }
 
-void eventoSetas(GLint key, GLint x, GLint y)
+void arrowKeys(GLint key, GLint x, GLint y)
 {
     if (key == GLUT_KEY_UP)
     {
@@ -255,6 +257,7 @@ void eventoSetas(GLint key, GLint x, GLint y)
         }
         rightRacketY -= racketsSpeed;
         rightRacketYf -= racketsSpeed;
+        cout << rightRacketY << endl;
     }
 
     if (key == GLUT_KEY_DOWN)
@@ -283,8 +286,8 @@ int main(int argc, char *argv[])
     createWindow();
     glClear(GL_COLOR_BUFFER_BIT);
     glutDisplayFunc(draw);
-    glutKeyboardFunc(eventoTeclado);
-    glutSpecialFunc(eventoSetas);
+    glutKeyboardFunc(keyboard);
+    glutSpecialFunc(arrowKeys);
     glutMainLoop();
     return 0;
 }
