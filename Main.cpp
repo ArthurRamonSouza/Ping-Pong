@@ -10,11 +10,14 @@ GLint WIDTH = 1200,
       yi = 0,
       yf = 40,
       incX = 0.0,
-      incY = 10;
+      incY = 100;
 
 // Ball consts
 GLint num_segments = 128;
 
+// Score consts
+GLint rightScore = 0,
+      leftScore = 0;      
 // Rackets consts
 GLint leftRacketX = 40,
       leftRacketXf = leftRacketX + 15,
@@ -220,13 +223,29 @@ void borderEffect(GLvoid)
 
 void displayScore(GLvoid)
 {
-    // glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
-    // glutSwapBuffers();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    string rightScoreStr = to_string(rightScore);
+    glColor3fv(white);
+    glRasterPos2f(WIDTH / 4, 40);
+    for (char& c : rightScoreStr) {
+        glutBitmapCharacter(GLUT_BITMAP_9_BY_15, c);
+    }
+    
+    string leftScoreStr = to_string(leftScore);
+    glColor3fv(white);
+    glRasterPos2f(WIDTH - (WIDTH / 4) , 40);
+    for (char& c : leftScoreStr) {
+        glutBitmapCharacter(GLUT_BITMAP_9_BY_15, c);
+    }
+    
+    glutPostRedisplay();
 }
 
 void draw(GLvoid)
 {
     glClear(GL_COLOR_BUFFER_BIT);
+    displayScore();
     drawingBorders();
     drawingCenterLine();
     drawRackets();
@@ -262,8 +281,6 @@ void keyboard(char unsigned key, GLint x, GLint y)
     default:
         break;
     }
-
-    glutSwapBuffers();
     glutPostRedisplay();
 }
 
@@ -288,8 +305,6 @@ void arrowKeys(GLint key, GLint x, GLint y)
         rightRacketY += racketsSpeed;
         rightRacketYf += racketsSpeed;
     }
-
-    glutSwapBuffers();
     glutPostRedisplay();
 }
 
@@ -304,6 +319,7 @@ int main(int argc, char *argv[])
     createWindow();
     glClear(GL_COLOR_BUFFER_BIT);
     glutDisplayFunc(draw);
+    //glutDisplayFunc(displayScore);
     glutKeyboardFunc(keyboard);
     glutSpecialFunc(arrowKeys);
     glutMainLoop();
