@@ -2,6 +2,7 @@
 #include <iostream>
 #include <math.h>
 
+// Border consts
 GLint WIDTH = 1200,
       HEIGHT = 600,
       BORDER_SIZE = 10,
@@ -13,11 +14,17 @@ GLint WIDTH = 1200,
       incY = 100;
 
 // Ball consts
-GLint num_segments = 128;
+GLint numSegments = 64,
+      ballRadius = 16,
+      ballX = (WIDTH / 2),
+      ballY = (HEIGHT / 2),
+      speedX = 5,
+      speedY = 2;
 
 // Score consts
 GLint rightScore = 0,
-      leftScore = 0;      
+      leftScore = 0; 
+
 // Rackets consts
 GLint leftRacketX = 40,
       leftRacketXf = leftRacketX + 15,
@@ -155,16 +162,43 @@ void drawRackets(GLvoid)
     glEnd();
 }
 
-void drawBall(float cx, float cy, float r, int num_segments)
+void ballCollision(GLvoid)
 {
-    glBegin(GL_TRIANGLE_FAN);
-    glColor3f(1.0f, 1.0f, 1.0f); // Define a cor do círculo como branco
-    for (int i = 0; i < num_segments; i++)
+    // Ball collision on the left border
+    if(ballX + ballRadius + speedX >= WIDTH - BORDER_SIZE)
     {
-        float theta = 2.0f * 3.1415926f * float(i) / float(num_segments);
-        float x = r * cosf(theta);
-        float y = r * sinf(theta);
-        glVertex2f(x + cx, y + cy);
+        speedX *= -1;
+        rightScore++;
+    }
+    // Ball collision on the right border
+    else if(ballX - ballRadius + speedX <= BORDER_SIZE)
+    {
+        speedX *= -1;
+        leftScore++;
+    }
+    // Ball collision on the top or bottom borders
+    else if(ballY + ballRadius + speedY >= HEIGHT - BORDER_SIZE || ballY - ballRadius + speedY <= BORDER_SIZE)
+    {
+        speedY *= -1;
+    }
+}
+
+void drawBall()
+{
+    ballCollision();
+    
+    ballX += speedX;
+    ballY += speedY;
+
+    glBegin(GL_TRIANGLE_FAN);
+    // Defines the circle color as white
+    glColor3f(1.0f, 1.0f, 1.0f);
+    for (int i = 0; i < numSegments; i++)
+    {
+        float theta = 2.0f * 3.1415926f * float(i) / float(numSegments);
+        float x = ballRadius * cosf(theta);
+        float y = ballRadius * sinf(theta);
+        glVertex2f(x + ballX, y + ballY);
     }
     glEnd();
 }
@@ -225,16 +259,18 @@ void displayScore(GLvoid)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    // Right score
     string rightScoreStr = to_string(rightScore);
     glColor3fv(white);
     glRasterPos2f(WIDTH / 4, 40);
     for (char& c : rightScoreStr) {
         glutBitmapCharacter(GLUT_BITMAP_9_BY_15, c);
     }
-    
+
+    // Left score
     string leftScoreStr = to_string(leftScore);
     glColor3fv(white);
-    glRasterPos2f(WIDTH - (WIDTH / 4) , 40);
+    glRasterPos2f(WIDTH - (WIDTH / 4), 40);
     for (char& c : leftScoreStr) {
         glutBitmapCharacter(GLUT_BITMAP_9_BY_15, c);
     }
@@ -246,10 +282,10 @@ void draw(GLvoid)
 {
     glClear(GL_COLOR_BUFFER_BIT);
     displayScore();
+    drawBall();
     drawingBorders();
     drawingCenterLine();
     drawRackets();
-    drawBall((WIDTH / 2), (HEIGHT / 2), 16.f, num_segments);
     borderEffect();
     glFlush();
     glutSwapBuffers();
@@ -313,6 +349,7 @@ int main(int argc, char *argv[])
     cout << "\nALUNOS:\t\t\t\t\tMATRÍCULA:\n\nArthur Ramón Souza Ferreira Martins\t20210027186\n"
          << "\nDavi Baratto\t\t\t\t20210025940\n"
          << "\nJoão Roberto de Oliveira Ferreira\t20200083646\n"
+         << "\nGustavo Caminha da Silva Junior\t\t20210114817\n"
          << endl;
 
     initGlut(&argc, argv);
@@ -329,5 +366,7 @@ int main(int argc, char *argv[])
 /*  Helpfull content
 
 https://stackoverflow.com/questions/35514902/glutinitdisplaymodeglut-double-glut-rgb-glut-depth-explanation
+
+https://www.youtube.com/watch?v=-IlxN9UjU_8&t=737s
 
 */
