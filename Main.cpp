@@ -19,11 +19,13 @@ GLint numSegments = 64,
       ballX = (WIDTH / 2),
       ballY = (HEIGHT / 2),
       speedX = 5,
-      speedY = 2;
+      speedY = 2,
+      maxBallSpeed = 15;
 
 // Score consts
 GLint rightScore = 0,
-      leftScore = 0; 
+      leftScore = 0,
+      WINCONDITION = 10;
 
 // Rackets consts
 GLint leftRacketX = 40,
@@ -164,20 +166,39 @@ void drawRackets(GLvoid)
 
 void ballCollision(GLvoid)
 {
+    GLboolean xBallCollidesRightRacket = ballX + ballRadius + speedX >= rightRacketXf && ballX + ballRadius + speedX <= rightRacketX,
+              yBallCollidesRightRacket = ballY + ballRadius + speedY >= rightRacketY && ballY - ballRadius + speedY <= rightRacketYf,
+              xBallCollidesLefttRacket = ballX - ballRadius + speedX >= leftRacketX && ballX - ballRadius + speedX <= leftRacketXf,
+              yBallCollidesLefttRacket = ballY + ballRadius + speedY >= leftRacketY && ballY - ballRadius + speedY <= leftRacketYf;
+
+    // Ball collision on the rackets
+    if (xBallCollidesRightRacket && yBallCollidesRightRacket || xBallCollidesLefttRacket && yBallCollidesLefttRacket)
+    {
+        if (speedX > 0 && speedX < maxBallSpeed)
+        {
+            speedX++;
+        }
+        else if (speedX > -maxBallSpeed)
+        {
+            speedX--;
+        }
+        speedX *= -1;
+    }
+
     // Ball collision on the left border
-    if(ballX + ballRadius + speedX >= WIDTH - BORDER_SIZE)
+    else if (ballX + ballRadius + speedX >= WIDTH - BORDER_SIZE)
     {
         speedX *= -1;
         rightScore++;
     }
     // Ball collision on the right border
-    else if(ballX - ballRadius + speedX <= BORDER_SIZE)
+    else if (ballX - ballRadius + speedX <= BORDER_SIZE)
     {
         speedX *= -1;
         leftScore++;
     }
     // Ball collision on the top or bottom borders
-    else if(ballY + ballRadius + speedY >= HEIGHT - BORDER_SIZE || ballY - ballRadius + speedY <= BORDER_SIZE)
+    else if (ballY + ballRadius + speedY >= HEIGHT - BORDER_SIZE || ballY - ballRadius + speedY <= BORDER_SIZE)
     {
         speedY *= -1;
     }
@@ -186,7 +207,7 @@ void ballCollision(GLvoid)
 void drawBall()
 {
     ballCollision();
-    
+
     ballX += speedX;
     ballY += speedY;
 
@@ -255,6 +276,20 @@ void borderEffect(GLvoid)
     }
 }
 
+void displayWinner(GLvoid)
+{
+    return;
+}
+
+void scoreValidation(GLvoid)
+{
+
+    if (rightScore == WINCONDITION || leftScore == WINCONDITION)
+    {
+        displayWinner();
+    }
+}
+
 void displayScore(GLvoid)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -263,7 +298,8 @@ void displayScore(GLvoid)
     string rightScoreStr = to_string(rightScore);
     glColor3fv(white);
     glRasterPos2f(WIDTH / 4, 40);
-    for (char& c : rightScoreStr) {
+    for (char &c : rightScoreStr)
+    {
         glutBitmapCharacter(GLUT_BITMAP_9_BY_15, c);
     }
 
@@ -271,11 +307,14 @@ void displayScore(GLvoid)
     string leftScoreStr = to_string(leftScore);
     glColor3fv(white);
     glRasterPos2f(WIDTH - (WIDTH / 4), 40);
-    for (char& c : leftScoreStr) {
+    for (char &c : leftScoreStr)
+    {
         glutBitmapCharacter(GLUT_BITMAP_9_BY_15, c);
     }
-    
+
     glutPostRedisplay();
+
+    scoreValidation();
 }
 
 void draw(GLvoid)
@@ -356,7 +395,7 @@ int main(int argc, char *argv[])
     createWindow();
     glClear(GL_COLOR_BUFFER_BIT);
     glutDisplayFunc(draw);
-    //glutDisplayFunc(displayScore);
+    // glutDisplayFunc(displayScore);
     glutKeyboardFunc(keyboard);
     glutSpecialFunc(arrowKeys);
     glutMainLoop();
