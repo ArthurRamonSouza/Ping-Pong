@@ -40,6 +40,10 @@ GLint leftRacketX = 40,
 
       racketsSpeed = 20;
 
+// Pause var
+bool isPaused = false;
+
+
 // Defining colors
 GLfloat red[] = {1.0f, 0.0f, 0.0f};
 GLfloat green[] = {0.0f, 1.0f, 0.0f};
@@ -317,8 +321,41 @@ void displayScore(GLvoid)
     scoreValidation();
 }
 
+void displayPause(GLvoid){
+
+    // Print game paused in center
+    glColor3f(1.0f, 1.0f, 1.0f);
+    glRasterPos2f(490, 284);
+    string str ("GAME PAUSED");
+    int len = str.size();
+    for (int i = 0;i <= len; i++){
+	glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24,str[i]);
+    }
+
+    // Right score
+    string rightScoreStr = to_string(rightScore);
+    glColor3fv(white);
+    glRasterPos2f(WIDTH / 4, 284);
+    for (char &c : rightScoreStr)
+    {
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
+    }
+
+    // Left score
+    string leftScoreStr = to_string(leftScore);
+    glColor3fv(white);
+    glRasterPos2f(WIDTH - (WIDTH / 4), 284);
+    for (char &c : leftScoreStr)
+    {
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
+    }
+    glutPostRedisplay();
+    glFlush();
+}
+
 void draw(GLvoid)
-{
+{   
+    if(!isPaused){
     glClear(GL_COLOR_BUFFER_BIT);
     displayScore();
     drawBall();
@@ -329,6 +366,17 @@ void draw(GLvoid)
     glFlush();
     glutSwapBuffers();
     glutPostRedisplay();
+    }
+
+    else{
+    glClear(GL_COLOR_BUFFER_BIT);
+    //displayScore();
+    displayPause();
+    glFlush();
+    glutSwapBuffers();
+    glutPostRedisplay();
+    }
+    
 }
 
 void keyboard(char unsigned key, GLint x, GLint y)
@@ -353,9 +401,16 @@ void keyboard(char unsigned key, GLint x, GLint y)
         leftRacketY += racketsSpeed;
         leftRacketYf += racketsSpeed;
         break;
+
+    //Use space to pause
+    case ' ':
+        isPaused = !isPaused; // change pause condition
+        break;
+
     default:
         break;
     }
+
     glutPostRedisplay();
 }
 
