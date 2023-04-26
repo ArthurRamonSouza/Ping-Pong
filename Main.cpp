@@ -521,11 +521,14 @@ void keyboard(char unsigned key, GLint x, GLint y)
     case ' ':
         isPaused = !isPaused; // change pause condition
         break;
-        
+
     //Use esc to exit
     case 27:
-         exit(0);
-         break;
+        if(isPaused)
+        {
+            exit(0);
+        }
+        break;
 
     default:
         break;
