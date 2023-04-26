@@ -492,6 +492,7 @@ void keyboard(char unsigned key, GLint x, GLint y)
         leftRacketY -= racketsSpeed;
         leftRacketYf -= racketsSpeed;
         break;
+
     case 's':
     case 'S':
         if (leftRacketYf == 580)
@@ -504,17 +505,23 @@ void keyboard(char unsigned key, GLint x, GLint y)
 
     case 'r':
     case 'R':
-        rightScore = 0;
-        leftScore = 0;
-        speedX = 5;
-        speedY = 2;
-        ballX = (WIDTH / 2);
-        ballY = (HEIGHT / 2);
+        if(rightScore == WINCONDITION || leftScore == WINCONDITION)
+        {
+            rightScore = 0;
+            leftScore = 0;
+            speedX = 5;
+            speedY = 2;
+            ballX = (WIDTH / 2);
+            ballY = (HEIGHT / 2);
+        }
+
         break;
+
     //Use space to pause
     case ' ':
         isPaused = !isPaused; // change pause condition
         break;
+        
     //Use esc to exit
     case 27:
          exit(0);
