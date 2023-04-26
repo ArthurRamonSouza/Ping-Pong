@@ -43,7 +43,6 @@ GLint leftRacketX = 40,
 // Pause var
 bool isPaused = false;
 
-
 // Defining colors
 GLfloat red[] = {1.0f, 0.0f, 0.0f};
 GLfloat green[] = {0.0f, 1.0f, 0.0f};
@@ -282,7 +281,96 @@ void borderEffect(GLvoid)
 
 void displayWinner(GLvoid)
 {
-    return;
+    if(rightScore == WINCONDITION){ 
+
+            // Winner message
+        glColor3f(1.0f, 0.0f, 0.0f);
+        glRasterPos2f(480, 284);
+        string str ("LEFT SIDE WON");
+        int len = str.size();
+        for (int i = 0;i <= len; i++){
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24,str[i]);
+        }
+            // Right score
+        string rightScoreStr = to_string(rightScore);
+        glColor3fv(white);
+        glRasterPos2f(173, 284);
+        for (char &c : rightScoreStr)
+        {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
+            
+        }
+
+            // Left score
+        string leftScoreStr = to_string(leftScore);
+        glColor3fv(white);
+        glRasterPos2f(973, 284);
+        for (char &c : leftScoreStr)
+        {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
+        }
+        
+            // Final messages
+        glColor3f(1.0f, 1.0f, 1.0f);
+        glRasterPos2f(445, 484);
+        string ada ("PRESS R TO RESTART");
+        int auxa = ada.size();
+        for (int i = 0;i <= auxa; i++){
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24,ada[i]);
+        }
+        glRasterPos2f(455, 524);
+        string tur ("PRESS ESC TO EXIT");
+        int auxt = tur.size();
+        for (int i = 0;i <= auxt; i++){
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24,tur[i]);
+        }
+            
+    }
+    else{
+
+            // Winner message
+        glColor3f(0.0f, 0.0f, 1.0f);
+        glRasterPos2f(480, 284);
+        string str ("RIGHT SIDE WON");
+        int len = str.size();
+        for (int i = 0;i <= len; i++){
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24,str[i]);
+        }
+            // Right score
+        string rightScoreStr = to_string(rightScore);
+        glColor3fv(white);
+        glRasterPos2f(173, 284);
+        for (char &c : rightScoreStr)
+        {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
+            
+        }
+
+            // Left score
+        string leftScoreStr = to_string(leftScore);
+        glColor3fv(white);
+        glRasterPos2f(973, 284);
+        for (char &c : leftScoreStr)
+        {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
+        }
+        
+            // Final messages
+        glColor3f(1.0f, 1.0f, 1.0f);
+        glRasterPos2f(445, 484);
+        string ada ("PRESS R TO RESTART");
+        int auxa = ada.size();
+        for (int i = 0;i <= auxa; i++){
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24,ada[i]);
+        }
+        glRasterPos2f(455, 524);
+        string tur ("PRESS ESC TO EXIT");
+        int auxt = tur.size();
+        for (int i = 0;i <= auxt; i++){
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24,tur[i]);
+        }
+    }
+    
 }
 
 void scoreValidation(GLvoid)
@@ -339,6 +427,7 @@ void displayPause(GLvoid){
     for (char &c : rightScoreStr)
     {
         glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
+        
     }
 
     // Left score
@@ -354,28 +443,39 @@ void displayPause(GLvoid){
 }
 
 void draw(GLvoid)
-{   
-    if(!isPaused){
-    glClear(GL_COLOR_BUFFER_BIT);
-    displayScore();
-    drawBall();
-    drawingBorders();
-    drawingCenterLine();
-    drawRackets();
-    borderEffect();
-    glFlush();
-    glutSwapBuffers();
-    glutPostRedisplay();
+{
+    if(leftScore == WINCONDITION || rightScore == WINCONDITION){
+        glClear(GL_COLOR_BUFFER_BIT);
+        displayWinner();
+        glFlush();
+        glutSwapBuffers();
+        glutPostRedisplay();
     }
 
     else{
-    glClear(GL_COLOR_BUFFER_BIT);
-    //displayScore();
-    displayPause();
-    glFlush();
-    glutSwapBuffers();
-    glutPostRedisplay();
+        if(!isPaused){
+            glClear(GL_COLOR_BUFFER_BIT);
+            displayScore();
+            drawBall();
+            drawingBorders();
+            drawingCenterLine();
+            drawRackets();
+            borderEffect();
+            glFlush();
+            glutSwapBuffers();
+            glutPostRedisplay();
+        }
+        else{
+        glClear(GL_COLOR_BUFFER_BIT);
+        //displayScore();
+        displayPause();
+        glFlush();
+        glutSwapBuffers();
+        glutPostRedisplay();
     }
+    }
+
+    
     
 }
 
@@ -402,10 +502,23 @@ void keyboard(char unsigned key, GLint x, GLint y)
         leftRacketYf += racketsSpeed;
         break;
 
+    case 'r':
+    case 'R':
+        rightScore = 0;
+        leftScore = 0;
+        speedX = 5;
+        speedY = 2;
+        ballX = (WIDTH / 2);
+        ballY = (HEIGHT / 2);
+        break;
     //Use space to pause
     case ' ':
         isPaused = !isPaused; // change pause condition
         break;
+    //Use esc to exit
+    case 27:
+         exit(0);
+         break;
 
     default:
         break;
