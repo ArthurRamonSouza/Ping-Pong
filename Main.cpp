@@ -41,7 +41,11 @@ GLint leftRacketX = 40,
       racketsSpeed = 20;
 
 // Pause var
-bool isPaused = false;
+GLboolean isPaused = false;
+
+// Variable to control keys
+GLboolean keystates[256] = {false},
+          specialKeyStates[256] = {false};
 
 // Defining colors
 GLfloat red[] = {1.0f, 0.0f, 0.0f};
@@ -445,44 +449,6 @@ void displayPause(GLvoid)
     glFlush();
 }
 
-void draw(GLvoid)
-{
-    if (leftScore == WINCONDITION || rightScore == WINCONDITION)
-    {
-        glClear(GL_COLOR_BUFFER_BIT);
-        displayWinner();
-        glFlush();
-        glutSwapBuffers();
-        glutPostRedisplay();
-    }
-
-    else
-    {
-        if (!isPaused)
-        {
-            glClear(GL_COLOR_BUFFER_BIT);
-            displayScore();
-            drawBall();
-            drawingBorders();
-            drawingCenterLine();
-            drawRackets();
-            borderEffect();
-            glFlush();
-            glutSwapBuffers();
-            glutPostRedisplay();
-        }
-        else
-        {
-            glClear(GL_COLOR_BUFFER_BIT);
-            // displayScore();
-            displayPause();
-            glFlush();
-            glutSwapBuffers();
-            glutPostRedisplay();
-        }
-    }
-}
-
 void keyboard(char unsigned key, GLint x, GLint y)
 {
     switch (key)
@@ -566,6 +532,135 @@ void arrowKeys(GLint key, GLint x, GLint y)
     glutPostRedisplay();
 }
 
+void onKeyDown(unsigned char key, int x, int y)
+{
+    // Ignore key repeat events
+    if (!glutGetModifiers())
+    {
+        keystates[key] = true;
+    }
+}
+
+void onKeyUp(unsigned char key, int x, int y)
+{
+    keystates[key] = false;
+}
+
+void onSpecialDown(int key, int x, int y)
+{
+    specialKeyStates[key] = true;
+}
+
+void onSpecialUp(int key, int x, int y)
+{
+    specialKeyStates[key] = false;
+}
+
+void draw(GLvoid)
+{
+    glutSpecialFunc(onSpecialDown);
+    glutSpecialUpFunc(onSpecialUp);
+    glutKeyboardFunc(onKeyDown);
+    glutKeyboardUpFunc(onKeyUp);
+
+    // Right racket movement
+    if (specialKeyStates[101] == true)
+    {
+        if (rightRacketY - racketsSpeed <= BORDER_SIZE)
+        {
+            rightRacketY = BORDER_SIZE + 10;
+            rightRacketYf = rightRacketY + 60;
+        }
+
+        else
+        {
+            rightRacketY -= racketsSpeed;
+            rightRacketYf -= racketsSpeed;
+        }
+    }
+
+    if (specialKeyStates[103] == true)
+    {
+        if (rightRacketYf + racketsSpeed >= HEIGHT - BORDER_SIZE)
+        {
+            rightRacketYf = HEIGHT - BORDER_SIZE - 10;
+            rightRacketY = rightRacketYf - 60;
+        }
+
+        else
+        {
+            rightRacketY += racketsSpeed;
+            rightRacketYf += racketsSpeed;
+        }
+    }
+
+    // Left racket movement
+    if (keystates[119] == true)
+    {
+       if (leftRacketY - racketsSpeed <= BORDER_SIZE)
+        {
+            leftRacketY = BORDER_SIZE + 10;
+            leftRacketYf = leftRacketY + 60;
+        }
+
+        else
+        {
+            leftRacketY -= racketsSpeed;
+            leftRacketYf -= racketsSpeed;
+        }
+    }
+
+    if (keystates[115] == true)
+    {
+        if (leftRacketYf + racketsSpeed >= HEIGHT - BORDER_SIZE)
+        {
+            leftRacketYf = HEIGHT - BORDER_SIZE - 10;
+            leftRacketY = leftRacketYf - 60;
+        }
+
+        else
+        {
+            leftRacketY += racketsSpeed;
+            leftRacketYf += racketsSpeed;
+        }
+    }
+
+    if (leftScore == WINCONDITION || rightScore == WINCONDITION)
+    {
+        glClear(GL_COLOR_BUFFER_BIT);
+        displayWinner();
+        glFlush();
+        glutSwapBuffers();
+        glutPostRedisplay();
+    }
+
+    else
+    {
+        if (!isPaused)
+        {
+            glClear(GL_COLOR_BUFFER_BIT);
+            displayScore();
+            drawBall();
+            drawingBorders();
+            drawingCenterLine();
+            drawRackets();
+            borderEffect();
+            glFlush();
+            glutSwapBuffers();
+            glutPostRedisplay();
+        }
+        else
+        {
+            glClear(GL_COLOR_BUFFER_BIT);
+            // displayScore();
+            displayPause();
+            glFlush();
+            glutSwapBuffers();
+            glutPostRedisplay();
+        }
+    }
+}
+
 int main(int argc, char *argv[])
 {
     cout << "\nALUNOS:\t\t\t\t\tMATRÍCULA:\n\nArthur Ramón Souza Ferreira Martins\t20210027186\n"
@@ -578,9 +673,6 @@ int main(int argc, char *argv[])
     createWindow();
     glClear(GL_COLOR_BUFFER_BIT);
     glutDisplayFunc(draw);
-    // glutDisplayFunc(displayScore);
-    glutKeyboardFunc(keyboard);
-    glutSpecialFunc(arrowKeys);
     glutMainLoop();
     return 0;
 }
