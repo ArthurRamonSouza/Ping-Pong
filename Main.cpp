@@ -25,7 +25,7 @@ GLint numSegments = 64,
 // Score consts
 GLint rightScore = 0,
       leftScore = 0,
-      WINCONDITION = 1;
+      WINCONDITION = 10;
 
 // Rackets consts
 GLint leftRacketX = 40,
