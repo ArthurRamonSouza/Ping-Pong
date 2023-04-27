@@ -55,6 +55,25 @@ GLfloat white[] = {1.0f, 1.0f, 1.0f};
 
 using namespace std;
 
+void initGlut(int *argc, char **argv);
+void createWindow(GLvoid);
+void drawingBorders(GLvoid);
+void borderEffect(GLvoid);
+void drawingCenterLine(GLvoid);
+void drawRackets(GLvoid);
+void ballCollision(GLvoid);
+void drawBall();
+void displayScore(GLvoid);
+void scoreValidation(GLvoid);
+void displayWinner(GLvoid);
+void displayPause(GLvoid);
+void keyboard(char unsigned key, GLint x, GLint y);
+void onKeyDown(unsigned char key, int x, int y);
+void onKeyUp(unsigned char key, int x, int y);
+void onSpecialDown(int key, int x, int y);
+void onSpecialUp(int key, int x, int y);
+void draw(GLvoid);
+
 void initGlut(int *argc, char **argv)
 {
     glutInit(argc, argv);
@@ -126,6 +145,58 @@ void drawingBorders(GLvoid)
     glColor3fv(red);
     glVertex2i(WIDTH - BORDER_SIZE, BORDER_SIZE);
     glEnd();
+}
+
+void borderEffect(GLvoid)
+{
+    glBegin(GL_POLYGON);
+    glColor3fv(white);
+    glVertex2i(xi, yi);
+    glVertex2i(xf, yi);
+    glVertex2i(xf, yf);
+    glVertex2i(xi, yf);
+    glEnd();
+
+    yi += incY;
+    yf += incY;
+    xi += incX;
+    xf += incX;
+
+    if (yf >= HEIGHT && xi == 0)
+    {
+        yf = HEIGHT - BORDER_SIZE;
+        yi = HEIGHT;
+        xf = xi + 40;
+        incX += 10;
+        incY *= 0;
+    }
+
+    else if (xf >= WIDTH && yi == HEIGHT)
+    {
+        xi = WIDTH;
+        xf = WIDTH - BORDER_SIZE;
+        yi = yf - 40;
+        incX *= 0;
+        incY += -10;
+    }
+
+    else if (xi >= WIDTH && yi <= 0)
+    {
+        yi = 0;
+        yf = BORDER_SIZE;
+        xi = xf - 40;
+        incX += -10;
+        incY *= 0;
+    }
+
+    else if (xi <= 0 && yi <= 0)
+    {
+        xi = 0;
+        xf = BORDER_SIZE;
+        yf = yi + 40;
+        incX *= 0;
+        incY += 10;
+    }
 }
 
 void drawingCenterLine(GLvoid)
@@ -231,55 +302,38 @@ void drawBall()
     glEnd();
 }
 
-void borderEffect(GLvoid)
+void displayScore(GLvoid)
 {
-    glBegin(GL_POLYGON);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Right score
+    string rightScoreStr = to_string(rightScore);
     glColor3fv(white);
-    glVertex2i(xi, yi);
-    glVertex2i(xf, yi);
-    glVertex2i(xf, yf);
-    glVertex2i(xi, yf);
-    glEnd();
-
-    yi += incY;
-    yf += incY;
-    xi += incX;
-    xf += incX;
-
-    if (yf >= HEIGHT && xi == 0)
+    glRasterPos2f(WIDTH / 4, 40);
+    for (char &c : rightScoreStr)
     {
-        yf = HEIGHT - BORDER_SIZE;
-        yi = HEIGHT;
-        xf = xi + 40;
-        incX += 10;
-        incY *= 0;
+        glutBitmapCharacter(GLUT_BITMAP_9_BY_15, c);
     }
 
-    else if (xf >= WIDTH && yi == HEIGHT)
+    // Left score
+    string leftScoreStr = to_string(leftScore);
+    glColor3fv(white);
+    glRasterPos2f(WIDTH - (WIDTH / 4), 40);
+    for (char &c : leftScoreStr)
     {
-        xi = WIDTH;
-        xf = WIDTH - BORDER_SIZE;
-        yi = yf - 40;
-        incX *= 0;
-        incY += -10;
+        glutBitmapCharacter(GLUT_BITMAP_9_BY_15, c);
     }
 
-    else if (xi >= WIDTH && yi <= 0)
-    {
-        yi = 0;
-        yf = BORDER_SIZE;
-        xi = xf - 40;
-        incX += -10;
-        incY *= 0;
-    }
+    glutPostRedisplay();
 
-    else if (xi <= 0 && yi <= 0)
+    scoreValidation();
+}
+
+void scoreValidation(GLvoid)
+{
+    if (rightScore == WINCONDITION || leftScore == WINCONDITION)
     {
-        xi = 0;
-        xf = BORDER_SIZE;
-        yf = yi + 40;
-        incX *= 0;
-        incY += 10;
+        displayWinner();
     }
 }
 
@@ -381,41 +435,6 @@ void displayWinner(GLvoid)
     }
 }
 
-void scoreValidation(GLvoid)
-{
-    if (rightScore == WINCONDITION || leftScore == WINCONDITION)
-    {
-        displayWinner();
-    }
-}
-
-void displayScore(GLvoid)
-{
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // Right score
-    string rightScoreStr = to_string(rightScore);
-    glColor3fv(white);
-    glRasterPos2f(WIDTH / 4, 40);
-    for (char &c : rightScoreStr)
-    {
-        glutBitmapCharacter(GLUT_BITMAP_9_BY_15, c);
-    }
-
-    // Left score
-    string leftScoreStr = to_string(leftScore);
-    glColor3fv(white);
-    glRasterPos2f(WIDTH - (WIDTH / 4), 40);
-    for (char &c : leftScoreStr)
-    {
-        glutBitmapCharacter(GLUT_BITMAP_9_BY_15, c);
-    }
-
-    glutPostRedisplay();
-
-    scoreValidation();
-}
-
 void displayPause(GLvoid)
 {
     // Print game paused in center
@@ -451,32 +470,26 @@ void displayPause(GLvoid)
 
 void keyboard(char unsigned key, GLint x, GLint y)
 {
+
+    glutPostRedisplay();
+}
+
+void onKeyDown(unsigned char key, int x, int y)
+{
+    // Ignore key repeat events
+    if (!glutGetModifiers())
+    {
+        keystates[key] = true;
+    }
+
+    // Pause and ESC key implementation 
     switch (key)
     {
-    case 'w':
-    case 'W':
-        if (leftRacketY == 20)
-        {
-            return;
-        }
-        leftRacketY -= racketsSpeed;
-        leftRacketYf -= racketsSpeed;
-        break;
-
-    case 's':
-    case 'S':
-        if (leftRacketYf == 580)
-        {
-            return;
-        }
-        leftRacketY += racketsSpeed;
-        leftRacketYf += racketsSpeed;
-        break;
-
     case 'r':
     case 'R':
         if (rightScore == WINCONDITION || leftScore == WINCONDITION)
         {
+            cout << "r" << endl;
             isPaused = false;
             rightScore = 0;
             leftScore = 0;
@@ -485,7 +498,6 @@ void keyboard(char unsigned key, GLint x, GLint y)
             ballX = (WIDTH / 2);
             ballY = (HEIGHT / 2);
         }
-
         break;
 
     // Use space to pause
@@ -503,41 +515,6 @@ void keyboard(char unsigned key, GLint x, GLint y)
 
     default:
         break;
-    }
-
-    glutPostRedisplay();
-}
-
-void arrowKeys(GLint key, GLint x, GLint y)
-{
-    if (key == GLUT_KEY_UP)
-    {
-        if (rightRacketY == 20)
-        {
-            return;
-        }
-        rightRacketY -= racketsSpeed;
-        rightRacketYf -= racketsSpeed;
-    }
-
-    if (key == GLUT_KEY_DOWN)
-    {
-        if (rightRacketYf == 580)
-        {
-            return;
-        }
-        rightRacketY += racketsSpeed;
-        rightRacketYf += racketsSpeed;
-    }
-    glutPostRedisplay();
-}
-
-void onKeyDown(unsigned char key, int x, int y)
-{
-    // Ignore key repeat events
-    if (!glutGetModifiers())
-    {
-        keystates[key] = true;
     }
 }
 
@@ -597,7 +574,7 @@ void draw(GLvoid)
     // Left racket movement
     if (keystates[119] == true)
     {
-       if (leftRacketY - racketsSpeed <= BORDER_SIZE)
+        if (leftRacketY - racketsSpeed <= BORDER_SIZE)
         {
             leftRacketY = BORDER_SIZE + 10;
             leftRacketYf = leftRacketY + 60;
@@ -631,7 +608,6 @@ void draw(GLvoid)
         displayWinner();
         glFlush();
         glutSwapBuffers();
-        glutPostRedisplay();
     }
 
     else
@@ -647,7 +623,6 @@ void draw(GLvoid)
             borderEffect();
             glFlush();
             glutSwapBuffers();
-            glutPostRedisplay();
         }
         else
         {
@@ -656,9 +631,9 @@ void draw(GLvoid)
             displayPause();
             glFlush();
             glutSwapBuffers();
-            glutPostRedisplay();
         }
     }
+    glutPostRedisplay();
 }
 
 int main(int argc, char *argv[])
