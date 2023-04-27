@@ -28,15 +28,16 @@ GLint rightScore = 0,
       WINCONDITION = 10;
 
 // Rackets consts
-GLint leftRacketX = 40,
+GLint racketSize = 60,
+      leftRacketX = 40,
       leftRacketXf = leftRacketX + 15,
-      leftRacketY = (HEIGHT / 2) - 60,
-      leftRacketYf = leftRacketY + 60,
+      leftRacketY = (HEIGHT - racketSize) / 2,
+      leftRacketYf = leftRacketY + racketSize,
 
       rightRacketX = WIDTH - 40,
       rightRacketXf = rightRacketX - 15,
-      rightRacketY = (HEIGHT / 2) - 60,
-      rightRacketYf = rightRacketY + 60,
+      rightRacketY = (HEIGHT - racketSize) / 2,
+      rightRacketYf = rightRacketY + racketSize,
 
       racketsSpeed = 10;
 
@@ -252,22 +253,48 @@ void ballCollision(GLvoid)
     // Ball collision on the right racket
     if (xBallCollidesRightRacket && yBallCollidesRightRacket)
     {
-        ballX = rightRacketXf - ballRadius;
-        speedX *= -1;
-        if (speedX != maxBallSpeed)
+        if (speedY == 0)
         {
-            speedX--;
+            speedX++;
+            speedY = 2;
         }
-    }
-    // Ball collision on the left racket
-    else if (xBallCollidesLefttRacket && yBallCollidesLefttRacket)
-    {
-        ballX = leftRacketXf + ballRadius;
-        speedX *= -1;
+        else if (ballY >= rightRacketY && ballY <= rightRacketYf - (racketSize / 2))
+        {
+            speedY = -fabs(speedY);
+        }
+        else
+        {
+            speedY = fabs(speedY);
+        }
+        ballX = rightRacketXf - ballRadius;
         if (speedX != maxBallSpeed)
         {
             speedX++;
         }
+        speedX *= -1;
+    }
+    // Ball collision on the left racket
+    else if (xBallCollidesLefttRacket && yBallCollidesLefttRacket)
+    {
+        if (speedY == 0)
+        {
+            speedX--;
+            speedY = 2;
+        }
+        else if (ballY >= leftRacketY && ballY <= leftRacketYf - (racketSize / 2))
+        {
+            speedY = -fabs(speedY);
+        }
+        else
+        {
+            speedY = fabs(speedY);
+        }
+        ballX = leftRacketXf + ballRadius;
+        if (fabs(speedY) != maxBallSpeed)
+        {
+            speedX--;
+        }
+        speedX *= -1;
     }
     // Ball collision on the left border
     else if (ballX + ballRadius + speedX >= WIDTH - BORDER_SIZE)
@@ -483,12 +510,6 @@ void displayPause(GLvoid)
     glFlush();
 }
 
-void keyboard(char unsigned key, GLint x, GLint y)
-{
-
-    glutPostRedisplay();
-}
-
 void onKeyDown(unsigned char key, int x, int y)
 {
     // Ignore key repeat events
@@ -504,12 +525,11 @@ void onKeyDown(unsigned char key, int x, int y)
     case 'R':
         if (rightScore == WINCONDITION || leftScore == WINCONDITION)
         {
-            cout << "r" << endl;
             isPaused = false;
             rightScore = 0;
             leftScore = 0;
             speedX = 5;
-            speedY = 2;
+            speedY = 0;
             ballX = (WIDTH / 2);
             ballY = (HEIGHT / 2);
         }
@@ -561,7 +581,7 @@ void draw(GLvoid)
         if (rightRacketY - racketsSpeed <= BORDER_SIZE)
         {
             rightRacketY = BORDER_SIZE + 10;
-            rightRacketYf = rightRacketY + 60;
+            rightRacketYf = rightRacketY + racketSize;
         }
 
         else
@@ -642,7 +662,6 @@ void draw(GLvoid)
         else
         {
             glClear(GL_COLOR_BUFFER_BIT);
-            // displayScore();
             displayPause();
             glFlush();
             glutSwapBuffers();
@@ -659,8 +678,6 @@ int main(int argc, char *argv[])
          << "\nGustavo Caminha da Silva Junior\t\t20210114817\n"
          << endl;
 
-    cout << rightRacketX << endl;
-    cout << rightRacketXf << endl;
     initGlut(&argc, argv);
     createWindow();
     glClear(GL_COLOR_BUFFER_BIT);
