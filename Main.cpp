@@ -19,6 +19,7 @@ GLint numSegments = 64,
       ballX = (WIDTH / 2),
       ballY = (HEIGHT / 2),
       speedX = 5,
+      speedXAux = 0,
       speedY = 0,
       maxBallSpeed = 15;
 
@@ -40,6 +41,8 @@ GLint racketSize = 60,
       rightRacketYf = rightRacketY + racketSize,
 
       racketsSpeed = 10;
+
+GLboolean waiting = false;
 
 // Pause variable
 GLboolean isPaused = false;
@@ -65,10 +68,12 @@ void drawRackets(GLvoid);
 void ballCollision(GLvoid);
 void drawBall();
 void displayScore(GLvoid);
+void scoreAGoal(string side);
 void scoreValidation(GLvoid);
 void displayWinner(GLvoid);
 void displayPause(GLvoid);
 void keyboard(char unsigned key, GLint x, GLint y);
+void enter(unsigned char key, int x, int y)
 void onKeyDown(unsigned char key, int x, int y);
 void onKeyUp(unsigned char key, int x, int y);
 void onSpecialDown(int key, int x, int y);
@@ -267,7 +272,7 @@ void ballCollision(GLvoid)
             speedY = fabs(speedY);
         }
         ballX = rightRacketXf - ballRadius;
-        if (speedX != maxBallSpeed)
+        if (fabs(speedX) < maxBallSpeed)
         {
             speedX++;
         }
@@ -289,24 +294,24 @@ void ballCollision(GLvoid)
         {
             speedY = fabs(speedY);
         }
+
         ballX = leftRacketXf + ballRadius;
-        if (fabs(speedY) != maxBallSpeed)
+
+        if (fabs(speedX) < maxBallSpeed)
         {
             speedX--;
         }
         speedX *= -1;
     }
-    // Ball collision on the left border
+    // Ball collision on the right border
     else if (ballX + ballRadius + speedX >= WIDTH - BORDER_SIZE)
     {
-        speedX *= -1; // Exclude later
-        rightScore++;
+        scoreAGoal("");
     }
-    // Ball collision on the right border
+    // Ball collision on the left border
     else if (ballX - ballRadius + speedX <= BORDER_SIZE)
     {
-        speedX *= -1; // Exclude later
-        leftScore++;
+        scoreAGoal("left");
     }
     // Ball collision on the bottom border
     else if (ballY + ballRadius + speedY >= HEIGHT - BORDER_SIZE)
@@ -369,6 +374,25 @@ void displayScore(GLvoid)
     glutPostRedisplay();
 
     scoreValidation();
+}
+
+void scoreAGoal(string side)
+{
+    waiting = true;
+    if (side == "left")
+    {
+        ballX = rightRacketX - ballRadius - 1;
+        ballY = rightRacketY + (racketSize / 2);
+        speedXAux = 5;
+        leftScore++;
+    }
+    else
+    {
+        ballX = leftRacketX + ballRadius + 1;
+        ballY = leftRacketY + (racketSize / 2);
+        speedXAux = -5;
+        rightScore++;
+    }
 }
 
 void scoreValidation(GLvoid)
@@ -553,6 +577,21 @@ void onKeyDown(unsigned char key, int x, int y)
     }
 }
 
+void enter(unsigned char key, int x, int y)
+{
+    // Use enter to throw the ball
+    if (key == 13)
+    {
+        if(ballX < WIDTH / 2)
+            speedX = 5;
+        else
+            speedX = -5;
+            
+        speedY = 0;
+        waiting = false;
+    }
+}
+
 void onKeyUp(unsigned char key, int x, int y)
 {
     keystates[key] = false;
@@ -570,9 +609,18 @@ void onSpecialUp(int key, int x, int y)
 
 void draw(GLvoid)
 {
+    if (waiting)
+    {
+        speedX = 0;
+        speedY = 0;
+        glutKeyboardFunc(enter);
+    }
+    else
+    {
+        glutKeyboardFunc(onKeyDown);
+    }
     glutSpecialFunc(onSpecialDown);
     glutSpecialUpFunc(onSpecialUp);
-    glutKeyboardFunc(onKeyDown);
     glutKeyboardUpFunc(onKeyUp);
 
     // Right racket movement
