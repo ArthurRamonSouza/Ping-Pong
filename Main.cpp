@@ -73,7 +73,7 @@ void scoreValidation(GLvoid);
 void displayWinner(GLvoid);
 void displayPause(GLvoid);
 void keyboard(char unsigned key, GLint x, GLint y);
-void enter(unsigned char key, int x, int y)
+void enter(unsigned char key, int x, int y);
 void onKeyDown(unsigned char key, int x, int y);
 void onKeyUp(unsigned char key, int x, int y);
 void onSpecialDown(int key, int x, int y);
@@ -582,11 +582,11 @@ void enter(unsigned char key, int x, int y)
     // Use enter to throw the ball
     if (key == 13)
     {
-        if(ballX < WIDTH / 2)
+        if (ballX < WIDTH / 2)
             speedX = 5;
         else
             speedX = -5;
-            
+
         speedY = 0;
         waiting = false;
     }
