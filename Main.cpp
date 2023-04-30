@@ -1,6 +1,99 @@
 #include <GL/glut.h>
 #include <iostream>
+#include <csignal>
 #include <math.h>
+#include <SFML/Audio.hpp>
+#include <thread>
+#include <atomic>
+#include <string>
+
+// Collision flags
+bool ballHit = false;
+// Controll threads
+bool soundThreadRunning = false;
+bool winThreadRunning = false;
+std::atomic<bool> stopThread(false);
+
+GLint playSound(std::string what)
+{
+    sf::SoundBuffer buffer;
+    if (what == "hit")
+    {
+        if (!buffer.loadFromFile("./sound/smash.wav"))
+        {
+            return -1;
+        }
+    }
+    else if (what == "point")
+    {
+        if (!buffer.loadFromFile("./sound/point.wav"))
+        {
+            return -1;
+        }
+    }
+    else if (what == "background")
+    {
+        if (!buffer.loadFromFile("./sound/background.wav"))
+        {
+            return -1;
+        }
+    }
+    else if (what == "win")
+    {
+        if (!buffer.loadFromFile("./sound/win.wav"))
+        {
+            return -1;
+        }
+    }
+
+    sf::Sound sound;
+    sound.setBuffer(buffer);
+
+    sound.play();
+
+    if (what == "background")
+    {
+        sound.setVolume(10);
+        sound.setLoop(true);
+    }
+
+    bool isBackground = (what == "background");
+
+    while (sound.getStatus() == sf::Sound::Playing)
+    {
+        if (isBackground && stopThread)
+        {
+            sound.stop();
+            return 0;
+        }
+        if (!isBackground && !soundThreadRunning)
+        {
+            sound.stop();
+            return 0;
+        }
+    }
+
+    return 0;
+}
+
+// Controll background sound
+std::unique_ptr<std::thread> soundThread;
+
+void startSoundThread()
+{
+    soundThreadRunning = true;
+    soundThread = std::make_unique<std::thread>(playSound, "background");
+}
+
+void stopSoundThread()
+{
+    stopThread = true;
+    if (soundThread && soundThread->joinable())
+    {
+        soundThread->join();
+    }
+    stopThread = false;
+}
 
 // Border consts
 GLint WIDTH = 1200,
@@ -29,7 +122,7 @@ GLint rightScore = 0,
       WINCONDITION = 10;
 
 // Rackets consts
-GLint racketSize = 60,
+GLint racketSize = 80,
       leftRacketX = 40,
       leftRacketXf = leftRacketX + 15,
       leftRacketY = (HEIGHT - racketSize) / 2,
@@ -40,9 +133,9 @@ GLint racketSize = 60,
       rightRacketY = (HEIGHT - racketSize) / 2,
       rightRacketYf = rightRacketY + racketSize,
 
-      racketsSpeed = 10;
+      racketsSpeed = 15;
 
-GLboolean waiting = false;
+GLboolean waiting = true;
 
 // Pause variable
 GLboolean isPaused = false;
@@ -59,26 +152,134 @@ GLfloat white[] = {1.0f, 1.0f, 1.0f};
 
 using namespace std;
 
-void initGlut(int *argc, char **argv);
-void createWindow(GLvoid);
-void drawingBorders(GLvoid);
-void borderEffect(GLvoid);
-void drawingCenterLine(GLvoid);
-void drawRackets(GLvoid);
-void ballCollision(GLvoid);
-void drawBall();
-void displayScore(GLvoid);
-void scoreAGoal(string side);
-void scoreValidation(GLvoid);
-void displayWinner(GLvoid);
-void displayPause(GLvoid);
-void keyboard(char unsigned key, GLint x, GLint y);
-void enter(unsigned char key, int x, int y);
-void onKeyDown(unsigned char key, int x, int y);
-void onKeyUp(unsigned char key, int x, int y);
-void onSpecialDown(int key, int x, int y);
-void onSpecialUp(int key, int x, int y);
-void draw(GLvoid);
+void scoreAGoal(string side)
+{
+    soundThreadRunning = true;
+    std::thread soundThread([&]()
+                            { playSound("point"); });
+    soundThread.detach();
+
+    waiting = true;
+    if (side == "left")
+    {
+        ballX = rightRacketX - ballRadius - 20;
+        ballY = rightRacketY + (racketSize / 2);
+        leftScore++;
+        speedXAux = 5 + floor((rightScore + leftScore) / 2);
+    }
+    else
+    {
+        ballX = leftRacketX + ballRadius + 20;
+        ballY = leftRacketY + (racketSize / 2);
+        rightScore++;
+        speedXAux = -5 - floor((rightScore + leftScore) / 2);
+    }
+}
+
+void displayWinner(GLvoid)
+{
+    if (rightScore == WINCONDITION)
+    {
+        isPaused = true;
+        // Winner message
+        glColor3f(1.0f, 0.0f, 0.0f);
+        glRasterPos2f(480, 284);
+        string str("LEFT SIDE WON");
+        int len = str.size();
+        for (int i = 0; i <= len; i++)
+        {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
+        }
+        // Right score
+        string rightScoreStr = to_string(rightScore);
+        glColor3fv(white);
+        glRasterPos2f(173, 284);
+        for (char &c : rightScoreStr)
+        {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
+        }
+
+        // Left score
+        string leftScoreStr = to_string(leftScore);
+        glColor3fv(white);
+        glRasterPos2f(973, 284);
+        for (char &c : leftScoreStr)
+        {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
+        }
+
+        // Final messages
+        glColor3f(1.0f, 1.0f, 1.0f);
+        glRasterPos2f(445, 484);
+        string ada("PRESS R TO RESTART");
+        int auxa = ada.size();
+        for (int i = 0; i <= auxa; i++)
+        {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, ada[i]);
+        }
+        glRasterPos2f(455, 524);
+        string tur("PRESS ESC TO EXIT");
+        int auxt = tur.size();
+        for (int i = 0; i <= auxt; i++)
+        {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, tur[i]);
+        }
+    }
+    else
+    {
+        // Winner message
+        glColor3f(0.0f, 0.0f, 1.0f);
+        glRasterPos2f(480, 284);
+        string str("RIGHT SIDE WON");
+        int len = str.size();
+        for (int i = 0; i <= len; i++)
+        {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
+        }
+        // Right score
+        string rightScoreStr = to_string(rightScore);
+        glColor3fv(white);
+        glRasterPos2f(173, 284);
+        for (char &c : rightScoreStr)
+        {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
+        }
+
+        // Left score
+        string leftScoreStr = to_string(leftScore);
+        glColor3fv(white);
+        glRasterPos2f(973, 284);
+        for (char &c : leftScoreStr)
+        {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
+        }
+
+        // Final messages
+        glColor3f(1.0f, 1.0f, 1.0f);
+        glRasterPos2f(445, 484);
+        string ada("PRESS R TO RESTART");
+        int auxa = ada.size();
+        for (int i = 0; i <= auxa; i++)
+        {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, ada[i]);
+        }
+        glRasterPos2f(455, 524);
+        string tur("PRESS ESC TO EXIT");
+        int auxt = tur.size();
+        for (int i = 0; i <= auxt; i++)
+        {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, tur[i]);
+        }
+    }
+}
+
+void scoreValidation(GLvoid)
+{
+    if (rightScore == WINCONDITION || leftScore == WINCONDITION)
+    {
+        displayWinner();
+    }
+}
 
 void initGlut(int *argc, char **argv)
 {
@@ -258,18 +459,25 @@ void ballCollision(GLvoid)
     // Ball collision on the right racket
     if (xBallCollidesRightRacket && yBallCollidesRightRacket)
     {
+        soundThreadRunning = true;
+        std::thread soundThread([&]()
+                                { playSound("hit"); });
+        soundThread.detach();
+
         if (speedY == 0)
         {
             speedX++;
             speedY = 2;
         }
+        // Ball collides in the upper half
         else if (ballY >= rightRacketY && ballY <= rightRacketYf - (racketSize / 2))
         {
-            speedY = -fabs(speedY);
+            speedY = -fabs(speedY + floor((rightScore + leftScore) / 2));
         }
-        else
+        // Ball collides in the lower half
+        else if (ballY > rightRacketYf - (racketSize / 2) && ballY <= rightRacketYf)
         {
-            speedY = fabs(speedY);
+            speedY = fabs(speedY + floor((rightScore + leftScore) / 2));
         }
         ballX = rightRacketXf - ballRadius;
         if (fabs(speedX) < maxBallSpeed)
@@ -281,18 +489,25 @@ void ballCollision(GLvoid)
     // Ball collision on the left racket
     else if (xBallCollidesLefttRacket && yBallCollidesLefttRacket)
     {
+        soundThreadRunning = true;
+        std::thread soundThread([&]()
+                                { playSound("hit"); });
+        soundThread.detach();
+
         if (speedY == 0)
         {
             speedX--;
             speedY = 2;
         }
+        // Ball collides in the upper half
         else if (ballY >= leftRacketY && ballY <= leftRacketYf - (racketSize / 2))
         {
-            speedY = -fabs(speedY);
+            speedY = -fabs(speedY + floor((rightScore + leftScore) / 2));
         }
-        else
+        // Ball collides in the lower half
+        else if (ballY > leftRacketYf - (racketSize / 2) && ballY <= leftRacketYf)
         {
-            speedY = fabs(speedY);
+            speedY = fabs(speedY + floor((rightScore + leftScore) / 2));
         }
 
         ballX = leftRacketXf + ballRadius;
@@ -316,12 +531,22 @@ void ballCollision(GLvoid)
     // Ball collision on the bottom border
     else if (ballY + ballRadius + speedY >= HEIGHT - BORDER_SIZE)
     {
+        soundThreadRunning = true;
+        std::thread soundThread([&]()
+                                { playSound("hit"); });
+        soundThread.detach();
+
         ballY = HEIGHT - BORDER_SIZE - ballRadius;
         speedY *= -1;
     }
     // Ball collision on the top border
     else if (ballY - ballRadius + speedY <= BORDER_SIZE)
     {
+        soundThreadRunning = true;
+        std::thread soundThread([&]()
+                                { playSound("hit"); });
+        soundThread.detach();
+
         ballY = BORDER_SIZE + ballRadius;
         speedY *= -1;
     }
@@ -376,131 +601,6 @@ void displayScore(GLvoid)
     scoreValidation();
 }
 
-void scoreAGoal(string side)
-{
-    waiting = true;
-    if (side == "left")
-    {
-        ballX = rightRacketX - ballRadius - 1;
-        ballY = rightRacketY + (racketSize / 2);
-        speedXAux = 5;
-        leftScore++;
-    }
-    else
-    {
-        ballX = leftRacketX + ballRadius + 1;
-        ballY = leftRacketY + (racketSize / 2);
-        speedXAux = -5;
-        rightScore++;
-    }
-}
-
-void scoreValidation(GLvoid)
-{
-    if (rightScore == WINCONDITION || leftScore == WINCONDITION)
-    {
-        displayWinner();
-    }
-}
-
-void displayWinner(GLvoid)
-{
-    if (rightScore == WINCONDITION)
-    {
-        isPaused = true;
-        // Winner message
-        glColor3f(1.0f, 0.0f, 0.0f);
-        glRasterPos2f(480, 284);
-        string str("LEFT SIDE WON");
-        int len = str.size();
-        for (int i = 0; i <= len; i++)
-        {
-            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
-        }
-        // Right score
-        string rightScoreStr = to_string(rightScore);
-        glColor3fv(white);
-        glRasterPos2f(173, 284);
-        for (char &c : rightScoreStr)
-        {
-            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
-        }
-
-        // Left score
-        string leftScoreStr = to_string(leftScore);
-        glColor3fv(white);
-        glRasterPos2f(973, 284);
-        for (char &c : leftScoreStr)
-        {
-            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
-        }
-
-        // Final messages
-        glColor3f(1.0f, 1.0f, 1.0f);
-        glRasterPos2f(445, 484);
-        string ada("PRESS R TO RESTART");
-        int auxa = ada.size();
-        for (int i = 0; i <= auxa; i++)
-        {
-            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, ada[i]);
-        }
-        glRasterPos2f(455, 524);
-        string tur("PRESS ESC TO EXIT");
-        int auxt = tur.size();
-        for (int i = 0; i <= auxt; i++)
-        {
-            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, tur[i]);
-        }
-    }
-    else
-    {
-
-        // Winner message
-        glColor3f(0.0f, 0.0f, 1.0f);
-        glRasterPos2f(480, 284);
-        string str("RIGHT SIDE WON");
-        int len = str.size();
-        for (int i = 0; i <= len; i++)
-        {
-            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, str[i]);
-        }
-        // Right score
-        string rightScoreStr = to_string(rightScore);
-        glColor3fv(white);
-        glRasterPos2f(173, 284);
-        for (char &c : rightScoreStr)
-        {
-            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
-        }
-
-        // Left score
-        string leftScoreStr = to_string(leftScore);
-        glColor3fv(white);
-        glRasterPos2f(973, 284);
-        for (char &c : leftScoreStr)
-        {
-            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, c);
-        }
-
-        // Final messages
-        glColor3f(1.0f, 1.0f, 1.0f);
-        glRasterPos2f(445, 484);
-        string ada("PRESS R TO RESTART");
-        int auxa = ada.size();
-        for (int i = 0; i <= auxa; i++)
-        {
-            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, ada[i]);
-        }
-        glRasterPos2f(455, 524);
-        string tur("PRESS ESC TO EXIT");
-        int auxt = tur.size();
-        for (int i = 0; i <= auxt; i++)
-        {
-            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, tur[i]);
-        }
-    }
-}
-
 void displayPause(GLvoid)
 {
     // Print game paused in center
@@ -542,6 +642,18 @@ void onKeyDown(unsigned char key, int x, int y)
         keystates[key] = true;
     }
 
+    // Use enter to throw the ball
+    if (key == 13 && waiting)
+    {
+        if (ballX < WIDTH / 2)
+            speedX = 5;
+        else
+            speedX = -5;
+
+        speedY = 0;
+        waiting = false;
+    }
+
     // Pause and ESC key implementation
     switch (key)
     {
@@ -549,13 +661,26 @@ void onKeyDown(unsigned char key, int x, int y)
     case 'R':
         if (rightScore == WINCONDITION || leftScore == WINCONDITION)
         {
+            // Resetting all the variables to restart the game
             isPaused = false;
+
+            leftRacketY = (HEIGHT - racketSize) / 2,
+            leftRacketYf = leftRacketY + racketSize,
+
+            rightRacketY = (HEIGHT - racketSize) / 2,
+            rightRacketYf = rightRacketY + racketSize,
+
             rightScore = 0;
             leftScore = 0;
+
             speedX = 5;
             speedY = 0;
+
             ballX = (WIDTH / 2);
             ballY = (HEIGHT / 2);
+
+            startSoundThread();
+            winThreadRunning = false;
         }
         break;
 
@@ -568,27 +693,13 @@ void onKeyDown(unsigned char key, int x, int y)
     case 27:
         if (isPaused)
         {
+            stopSoundThread();
             exit(0);
         }
         break;
 
     default:
         break;
-    }
-}
-
-void enter(unsigned char key, int x, int y)
-{
-    // Use enter to throw the ball
-    if (key == 13)
-    {
-        if (ballX < WIDTH / 2)
-            speedX = 5;
-        else
-            speedX = -5;
-
-        speedY = 0;
-        waiting = false;
     }
 }
 
@@ -613,18 +724,16 @@ void draw(GLvoid)
     {
         speedX = 0;
         speedY = 0;
-        glutKeyboardFunc(enter);
-    }
-    else
-    {
         glutKeyboardFunc(onKeyDown);
     }
+
+    glutKeyboardFunc(onKeyDown);
     glutSpecialFunc(onSpecialDown);
     glutSpecialUpFunc(onSpecialUp);
     glutKeyboardUpFunc(onKeyUp);
 
     // Right racket movement
-    if (specialKeyStates[101] == true)
+    if (specialKeyStates[101] == true && !isPaused)
     {
         if (rightRacketY - racketsSpeed <= BORDER_SIZE)
         {
@@ -639,12 +748,12 @@ void draw(GLvoid)
         }
     }
 
-    if (specialKeyStates[103] == true)
+    if (specialKeyStates[103] == true && !isPaused)
     {
         if (rightRacketYf + racketsSpeed >= HEIGHT - BORDER_SIZE)
         {
             rightRacketYf = HEIGHT - BORDER_SIZE - 10;
-            rightRacketY = rightRacketYf - 60;
+            rightRacketY = rightRacketYf - racketSize;
         }
 
         else
@@ -654,13 +763,19 @@ void draw(GLvoid)
         }
     }
 
+    // Ball chases the rigth racket to set the ball position after score a goal
+    if (waiting && ballX > WIDTH / 2)
+    {
+        ballY = (rightRacketY + rightRacketYf) / 2;
+    }
+
     // Left racket movement
-    if (keystates[119] == true)
+    if (keystates[119] == true && !isPaused)
     {
         if (leftRacketY - racketsSpeed <= BORDER_SIZE)
         {
             leftRacketY = BORDER_SIZE + 10;
-            leftRacketYf = leftRacketY + 60;
+            leftRacketYf = leftRacketY + racketSize;
         }
 
         else
@@ -670,12 +785,12 @@ void draw(GLvoid)
         }
     }
 
-    if (keystates[115] == true)
+    if (keystates[115] == true && !isPaused)
     {
         if (leftRacketYf + racketsSpeed >= HEIGHT - BORDER_SIZE)
         {
             leftRacketYf = HEIGHT - BORDER_SIZE - 10;
-            leftRacketY = leftRacketYf - 60;
+            leftRacketY = leftRacketYf - racketSize;
         }
 
         else
@@ -685,12 +800,28 @@ void draw(GLvoid)
         }
     }
 
+    // Ball chases the left racket to set the ball position after score a goal
+    if (waiting && ballX < WIDTH / 2)
+    {
+        ballY = (leftRacketY + leftRacketYf) / 2;
+    }
+
     if (leftScore == WINCONDITION || rightScore == WINCONDITION)
     {
         glClear(GL_COLOR_BUFFER_BIT);
         displayWinner();
         glFlush();
         glutSwapBuffers();
+        stopSoundThread();
+
+        if (!winThreadRunning)
+        {
+            soundThreadRunning = true;
+            winThreadRunning = true;
+            std::thread soundThread([&]()
+                                    { playSound("win"); });
+            soundThread.detach();
+        }
     }
 
     else
@@ -715,6 +846,7 @@ void draw(GLvoid)
             glutSwapBuffers();
         }
     }
+
     glutPostRedisplay();
 }
 
@@ -730,7 +862,9 @@ int main(int argc, char *argv[])
     createWindow();
     glClear(GL_COLOR_BUFFER_BIT);
     glutDisplayFunc(draw);
+    startSoundThread();
     glutMainLoop();
+
     return 0;
 }
 
