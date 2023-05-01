@@ -91,7 +91,10 @@ void stopSoundThread()
     {
         soundThread->join();
     }
-    soundThreadRunning = false;
+    if (!winThreadRunning)
+    {
+        soundThreadRunning = false;
+    }
     stopThread = false;
 }
 
@@ -771,6 +774,7 @@ void onKeyDown(unsigned char key, int x, int y)
     case 27:
         if (isPaused || (rightScore == WINCONDITION || leftScore == WINCONDITION))
         {
+            winThreadRunning = false;
             stopSoundThread();
             exit(0);
         }
