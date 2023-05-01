@@ -6,6 +6,7 @@
 #include <thread>
 #include <atomic>
 #include <string>
+#include <SOIL/SOIL.h>
 
 // Collision flags
 bool ballHit = false;
@@ -45,6 +46,13 @@ GLint playSound(std::string what)
             return -1;
         }
     }
+    else
+    {
+        if (!buffer.loadFromFile("./sound/owwn-ze-da-manga.wav"))
+        {
+            return -1;
+        }
+    }
 
     sf::Sound sound;
     sound.setBuffer(buffer);
@@ -56,6 +64,11 @@ GLint playSound(std::string what)
     {
         sound.setVolume(15);
         sound.setLoop(true);
+    }
+
+    if (what == "zeDaManga")
+    {
+        sound.setVolume(40);
     }
 
     while (sound.getStatus() == sf::Sound::Playing)
@@ -91,7 +104,11 @@ void stopSoundThread()
     {
         soundThread->join();
     }
-    soundThreadRunning = false;
+
+    if (!winThreadRunning)
+    {
+        soundThreadRunning = false;
+    }
     stopThread = false;
 }
 
@@ -116,17 +133,39 @@ void drawString(const std::string &str, float x, float y)
 
 void drawMenu()
 {
-    // Clear screen buffer with background color
-    glClear(GL_COLOR_BUFFER_BIT);
+    // Load the background image
+    GLuint textureID = SOIL_load_OGL_texture(
+        "background.png",
+        SOIL_LOAD_AUTO,
+        SOIL_CREATE_NEW_ID,
+        SOIL_FLAG_MIPMAPS | SOIL_FLAG_NTSC_SAFE_RGB);
 
-    // Defines constants for menu size and menu centered position
+    // Bind the texture and draw it on the screen
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0.0, 1200.0, 600.0, 0.0);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glDisable(GL_LIGHTING);
+    glEnable(GL_TEXTURE_2D);
+    glBegin(GL_QUADS);
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex2f(0.0f, 0.0f);
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex2f(1200.0f, 0.0f);
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex2f(1200.0f, 600.0f);
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex2f(0.0f, 600.0f);
+    glEnd();
+    glDisable(GL_TEXTURE_2D);
+
+    // Define constants for menu size and menu centered position
     const int MENU_WIDTH = 200;
     const int MENU_HEIGHT = 40;
     const int MENU_X = (1200 - MENU_WIDTH) / 2;
     const int MENU_Y = (600 - MENU_HEIGHT) / 2;
-
-    // Sets the background color of the menu
-    glColor3f(0.0f, 0.0f, 0.0f);
 
     // Sets the color of menu items
     glColor3f(1.0f, 1.0f, 1.0f);
@@ -170,6 +209,13 @@ void keyboard(unsigned char key, int x, int y)
         selectedItem = (selectedItem + 1) % MENU_TOTAL_ITEMS;
         glutPostRedisplay();
         break;
+    case 'm':
+    case 'M':
+        soundThreadRunning = true;
+        std::thread soundThread([&]()
+                                { playSound("zeDaManga"); });
+        soundThread.detach();
+        break;
     }
 }
 
@@ -197,7 +243,7 @@ GLint numSegments = 64,
 // Score consts
 GLint rightScore = 0,
       leftScore = 0,
-      WINCONDITION = 10;
+      WINCONDITION = 1;
 
 // Rackets consts
 GLint racketSize = 80,
@@ -771,6 +817,7 @@ void onKeyDown(unsigned char key, int x, int y)
     case 27:
         if (isPaused || (rightScore == WINCONDITION || leftScore == WINCONDITION))
         {
+            soundThreadRunning = false;
             stopSoundThread();
             exit(0);
         }

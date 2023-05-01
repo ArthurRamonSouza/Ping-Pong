@@ -2,7 +2,7 @@ CC = g++
 
 CFLAGS = -g -Wall
 
-OPENGLFLAGS = -lglut -lGL -lGLU -lsfml-audio -lsfml-system
+OPENGLFLAGS = -lglut -lGL -lGLU -lsfml-audio -lsfml-system -lSOIL
 
 all: rm main
 	
