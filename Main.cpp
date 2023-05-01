@@ -176,6 +176,18 @@ void keyboard(unsigned char key, int x, int y)
     }
 }
 
+void arrowKeys(int key, int x, int y)
+{
+   switch (key)
+    {
+    case 100:
+    case 102:
+        selectedItem = (selectedItem + 1) % MENU_TOTAL_ITEMS;
+        glutPostRedisplay();
+        break;
+    }
+}
+
 // Border consts
 GLint WIDTH = 1200,
       HEIGHT = 600,
@@ -806,6 +818,7 @@ void draw(GLvoid)
     {
         drawMenu();
         glutKeyboardFunc(keyboard);
+        glutSpecialFunc(arrowKeys);
         glutSwapBuffers();
     }
     else
