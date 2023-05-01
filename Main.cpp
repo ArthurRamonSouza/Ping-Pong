@@ -51,13 +51,12 @@ GLint playSound(std::string what)
 
     sound.play();
 
-    if (what == "background")
+    bool isBackground = (what == "background");
+    if (isBackground)
     {
-        sound.setVolume(10);
+        sound.setVolume(15);
         sound.setLoop(true);
     }
-
-    bool isBackground = (what == "background");
 
     while (sound.getStatus() == sf::Sound::Playing)
     {
@@ -92,7 +91,86 @@ void stopSoundThread()
     {
         soundThread->join();
     }
+    soundThreadRunning = false;
     stopThread = false;
+}
+
+// Start menu
+
+// States of the menu
+bool inicialMenu = true;
+int selectedItem = 0;
+const int MENU_PLAY = 0;
+const int MENU_EXIT = 1;
+const int MENU_TOTAL_ITEMS = 2;
+
+void drawString(const std::string &str, float x, float y)
+{
+    glRasterPos2f(x, y);
+
+    for (int i = 0; i < static_cast<int>(str.length()); i++)
+    {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, str[i]);
+    }
+}
+
+void drawMenu()
+{
+    // Clear screen buffer with background color
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // Defines constants for menu size and menu centered position
+    const int MENU_WIDTH = 200;
+    const int MENU_HEIGHT = 40;
+    const int MENU_X = (1200 - MENU_WIDTH) / 2;
+    const int MENU_Y = (600 - MENU_HEIGHT) / 2;
+
+    // Sets the background color of the menu
+    glColor3f(0.0f, 0.0f, 0.0f);
+
+    // Sets the color of menu items
+    glColor3f(1.0f, 1.0f, 1.0f);
+
+    // Defines the positions of menu items
+    const int ITEM_X = MENU_X + (MENU_WIDTH / 2);
+    const int ITEM_Y = MENU_Y + (MENU_HEIGHT / 2) - 8;
+
+    // Draw the menu items
+    drawString("PLAY", ITEM_X - 25, ITEM_Y);
+    drawString("EXIT", ITEM_X + 75, ITEM_Y);
+
+    // Defines the position of the arrow
+    const int ARROW_X = (selectedItem == MENU_PLAY) ? ITEM_X - 35 : ITEM_X + 65;
+    const int ARROW_Y = ITEM_Y;
+
+    // Draws the arrow indicating the selected item
+    drawString(">", ARROW_X, ARROW_Y);
+}
+
+void keyboard(unsigned char key, int x, int y)
+{
+    switch (key)
+    {
+    case 13: // Enter
+        switch (selectedItem)
+        {
+        case MENU_PLAY:
+            inicialMenu = false;
+            break;
+        case MENU_EXIT:
+            stopSoundThread();
+            exit(0);
+            break;
+        }
+        break;
+    case 'a':
+    case 'A':
+    case 'd':
+    case 'D':
+        selectedItem = (selectedItem + 1) % MENU_TOTAL_ITEMS;
+        glutPostRedisplay();
+        break;
+    }
 }
 
 // Border consts
@@ -691,7 +769,7 @@ void onKeyDown(unsigned char key, int x, int y)
 
     // Use esc to exit
     case 27:
-        if (isPaused)
+        if (isPaused || (rightScore == WINCONDITION || leftScore == WINCONDITION))
         {
             stopSoundThread();
             exit(0);
@@ -720,130 +798,139 @@ void onSpecialUp(int key, int x, int y)
 
 void draw(GLvoid)
 {
-    if (waiting)
+    if (inicialMenu)
     {
-        speedX = 0;
-        speedY = 0;
-        glutKeyboardFunc(onKeyDown);
-    }
-
-    glutKeyboardFunc(onKeyDown);
-    glutSpecialFunc(onSpecialDown);
-    glutSpecialUpFunc(onSpecialUp);
-    glutKeyboardUpFunc(onKeyUp);
-
-    // Right racket movement
-    if (specialKeyStates[101] == true && !isPaused)
-    {
-        if (rightRacketY - racketsSpeed <= BORDER_SIZE)
-        {
-            rightRacketY = BORDER_SIZE + 10;
-            rightRacketYf = rightRacketY + racketSize;
-        }
-
-        else
-        {
-            rightRacketY -= racketsSpeed;
-            rightRacketYf -= racketsSpeed;
-        }
-    }
-
-    if (specialKeyStates[103] == true && !isPaused)
-    {
-        if (rightRacketYf + racketsSpeed >= HEIGHT - BORDER_SIZE)
-        {
-            rightRacketYf = HEIGHT - BORDER_SIZE - 10;
-            rightRacketY = rightRacketYf - racketSize;
-        }
-
-        else
-        {
-            rightRacketY += racketsSpeed;
-            rightRacketYf += racketsSpeed;
-        }
-    }
-
-    // Ball chases the rigth racket to set the ball position after score a goal
-    if (waiting && ballX > WIDTH / 2)
-    {
-        ballY = (rightRacketY + rightRacketYf) / 2;
-    }
-
-    // Left racket movement
-    if (keystates[119] == true && !isPaused)
-    {
-        if (leftRacketY - racketsSpeed <= BORDER_SIZE)
-        {
-            leftRacketY = BORDER_SIZE + 10;
-            leftRacketYf = leftRacketY + racketSize;
-        }
-
-        else
-        {
-            leftRacketY -= racketsSpeed;
-            leftRacketYf -= racketsSpeed;
-        }
-    }
-
-    if (keystates[115] == true && !isPaused)
-    {
-        if (leftRacketYf + racketsSpeed >= HEIGHT - BORDER_SIZE)
-        {
-            leftRacketYf = HEIGHT - BORDER_SIZE - 10;
-            leftRacketY = leftRacketYf - racketSize;
-        }
-
-        else
-        {
-            leftRacketY += racketsSpeed;
-            leftRacketYf += racketsSpeed;
-        }
-    }
-
-    // Ball chases the left racket to set the ball position after score a goal
-    if (waiting && ballX < WIDTH / 2)
-    {
-        ballY = (leftRacketY + leftRacketYf) / 2;
-    }
-
-    if (leftScore == WINCONDITION || rightScore == WINCONDITION)
-    {
-        glClear(GL_COLOR_BUFFER_BIT);
-        displayWinner();
-        glFlush();
+        drawMenu();
+        glutKeyboardFunc(keyboard);
         glutSwapBuffers();
-        stopSoundThread();
-
-        if (!winThreadRunning)
-        {
-            soundThreadRunning = true;
-            winThreadRunning = true;
-            std::thread soundThread([&]()
-                                    { playSound("win"); });
-            soundThread.detach();
-        }
     }
-
     else
     {
-        if (!isPaused)
+        if (waiting)
+        {
+            speedX = 0;
+            speedY = 0;
+            glutKeyboardFunc(onKeyDown);
+        }
+
+        glutKeyboardFunc(onKeyDown);
+        glutSpecialFunc(onSpecialDown);
+        glutSpecialUpFunc(onSpecialUp);
+        glutKeyboardUpFunc(onKeyUp);
+
+        // Right racket movement
+        if (specialKeyStates[101] == true && !isPaused)
+        {
+            if (rightRacketY - racketsSpeed <= BORDER_SIZE)
+            {
+                rightRacketY = BORDER_SIZE + 10;
+                rightRacketYf = rightRacketY + racketSize;
+            }
+
+            else
+            {
+                rightRacketY -= racketsSpeed;
+                rightRacketYf -= racketsSpeed;
+            }
+        }
+
+        if (specialKeyStates[103] == true && !isPaused)
+        {
+            if (rightRacketYf + racketsSpeed >= HEIGHT - BORDER_SIZE)
+            {
+                rightRacketYf = HEIGHT - BORDER_SIZE - 10;
+                rightRacketY = rightRacketYf - racketSize;
+            }
+
+            else
+            {
+                rightRacketY += racketsSpeed;
+                rightRacketYf += racketsSpeed;
+            }
+        }
+
+        // Ball chases the rigth racket to set the ball position after score a goal
+        if (waiting && ballX > WIDTH / 2)
+        {
+            ballY = (rightRacketY + rightRacketYf) / 2;
+        }
+
+        // Left racket movement
+        if (keystates[119] == true && !isPaused)
+        {
+            if (leftRacketY - racketsSpeed <= BORDER_SIZE)
+            {
+                leftRacketY = BORDER_SIZE + 10;
+                leftRacketYf = leftRacketY + racketSize;
+            }
+
+            else
+            {
+                leftRacketY -= racketsSpeed;
+                leftRacketYf -= racketsSpeed;
+            }
+        }
+
+        if (keystates[115] == true && !isPaused)
+        {
+            if (leftRacketYf + racketsSpeed >= HEIGHT - BORDER_SIZE)
+            {
+                leftRacketYf = HEIGHT - BORDER_SIZE - 10;
+                leftRacketY = leftRacketYf - racketSize;
+            }
+
+            else
+            {
+                leftRacketY += racketsSpeed;
+                leftRacketYf += racketsSpeed;
+            }
+        }
+
+        // Ball chases the left racket to set the ball position after score a goal
+        if (waiting && ballX < WIDTH / 2)
+        {
+            ballY = (leftRacketY + leftRacketYf) / 2;
+        }
+
+        if (leftScore == WINCONDITION || rightScore == WINCONDITION)
         {
             glClear(GL_COLOR_BUFFER_BIT);
-            displayScore();
-            drawBall();
-            drawingBorders();
-            drawingCenterLine();
-            drawRackets();
-            borderEffect();
+            displayWinner();
             glFlush();
             glutSwapBuffers();
+            stopSoundThread();
+
+            if (!winThreadRunning)
+            {
+                soundThreadRunning = true;
+                winThreadRunning = true;
+                std::thread soundThread([&]()
+                                        { playSound("win"); });
+                soundThread.detach();
+            }
         }
+
         else
         {
-            glClear(GL_COLOR_BUFFER_BIT);
-            displayPause();
-            glFlush();
-            glutSwapBuffers();
+            if (!isPaused)
+            {
+                glClear(GL_COLOR_BUFFER_BIT);
+                displayScore();
+                drawBall();
+                drawingBorders();
+                drawingCenterLine();
+                drawRackets();
+                borderEffect();
+                glFlush();
+                glutSwapBuffers();
+            }
+            else
+            {
+                glClear(GL_COLOR_BUFFER_BIT);
+                displayPause();
+                glFlush();
+                glutSwapBuffers();
+            }
         }
     }
 
